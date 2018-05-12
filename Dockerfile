@@ -1,18 +1,11 @@
-# Copyright (c) 2012-2016 Codenvy, S.A.
-# All rights reserved. This program and the accompanying materials
-# are made available under the terms of the Eclipse Public License v1.0
-# which accompanies this distribution, and is available at
-# http://www.eclipse.org/legal/epl-v10.html
-# Contributors:
-# Codenvy, S.A. - initial API and implementation
-
 FROM kalilinux/kali-linux-docker
 
-ENV JAVA_VERSION=8u65 \
-    JAVA_VERSION_PREFIX=1.8.0_65
-ENV JAVA_HOME /opt/jre$JAVA_VERSION_PREFIX
-ENV PATH $JAVA_HOME/bin:$PATH
-RUN apt-get update
+RUN echo "deb http://http.kali.org/kali kali-rolling main contrib non-free" > /etc/apt/sources.list && \
+    echo "deb-src http://http.kali.org/kali kali-rolling main contrib non-free" >> /etc/apt/sources.list
+ENV DEBIAN_FRONTEND noninteractive
+RUN set -x \
+    && apt-get -yqq update \
+    && apt-get -yqq dist-upgrade
 RUN apt-get -y install openssh-server sudo procps wget unzip mc ca-certificates curl software-properties-common python-software-properties
 RUN mkdir /var/run/sshd
 RUN sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
