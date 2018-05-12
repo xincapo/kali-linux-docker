@@ -6,6 +6,8 @@ ENV JAVA_HOME /opt/jre$JAVA_VERSION_PREFIX
 ENV PATH $JAVA_HOME/bin:$PATH
 RUN apt-get update && \
     apt-get -y install \
+    xfce4 \
+    xfce4-goodies \
     openssh-server \
     sudo \
     procps \
