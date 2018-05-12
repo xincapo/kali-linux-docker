@@ -1,31 +1,58 @@
-FROM kalilinux/kali-linux-docker
-# Metadata params
-ARG BUILD_DATE
-ARG VERSION
-ARG VCS_URL
-ARG VCS_REF
+# Copyright (c) 2012-2016 Codenvy, S.A.
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Eclipse Public License v1.0
+# which accompanies this distribution, and is available at
+# http://www.eclipse.org/legal/epl-v10.html
+# Contributors:
+# Codenvy, S.A. - initial API and implementation
 
-LABEL org.label-schema.build-date=$BUILD_DATE \
-      org.label-schema.vcs-url=$VCS_URL \
-      org.label-schema.vcs-ref=$VCS_REF \
-      org.label-schema.version=$VERSION \
-      org.label-schema.name='Kali Linux' \
-      org.label-schema.description='Official Kali Linux docker image' \
-      org.label-schema.usage='https://www.kali.org/news/official-kali-linux-docker-images/' \
-      org.label-schema.url='https://www.kali.org/' \
-      org.label-schema.vendor='Offensive Security' \
-      org.label-schema.schema-version='1.0' \
-      org.label-schema.docker.cmd='docker run --rm kalilinux/kali-linux-docker' \
-      org.label-schema.docker.cmd.devel='docker run --rm -ti kalilinux/kali-linux-docker' \
-      org.label-schema.docker.debug='docker logs $CONTAINER' \
-      io.github.offensive-security.docker.dockerfile="Dockerfile" \
-      io.github.offensive-security.license="GPLv3" \
-      MAINTAINER="Steev Klimaszewski <steev@kali.org>"
-RUN echo "deb http://http.kali.org/kali kali-rolling main contrib non-free" > /etc/apt/sources.list && \
-    echo "deb-src http://http.kali.org/kali kali-rolling main contrib non-free" >> /etc/apt/sources.list
-ENV DEBIAN_FRONTEND noninteractive
-RUN set -x \
-    && apt-get -yqq update \
-    && apt-get -yqq dist-upgrade \
-    && apt-get clean
-CMD ["bash"]
+FROM kalilinux/kali-linux-docker
+
+ENV JAVA_VERSION=8u65 \
+    JAVA_VERSION_PREFIX=1.8.0_65
+ENV JAVA_HOME /opt/jre$JAVA_VERSION_PREFIX
+ENV PATH $JAVA_HOME/bin:$PATH
+RUN apt-get update && \
+    apt-get -y install \
+    openssh-server \
+    sudo \
+    procps \
+    wget \
+    unzip \
+    mc \
+    ca-certificates \
+    curl \
+    software-properties-common \
+    python-software-properties && \
+    mkdir /var/run/sshd && \
+    sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd && \
+    echo "%sudo ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && \
+    useradd -u 1000 -G users,sudo -d /home/user --shell /bin/bash -m user && \
+    echo "secret\nsecret" | passwd user && \
+    add-apt-repository ppa:git-core/ppa && \
+    apt-get update && \
+    sudo apt-get install git subversion -y && \
+    apt-get clean && \
+    wget \
+   --no-cookies \
+   --no-check-certificate \
+   --header "Cookie: oraclelicense=accept-securebackup-cookie" \
+   -qO- \
+   "http://download.oracle.com/otn-pub/java/jdk/$JAVA_VERSION-b17/jre-$JAVA_VERSION-linux-x64.tar.gz" | tar -zx -C /opt/ && \
+    apt-get -y autoremove \
+    && apt-get -y clean \
+    && rm -rf /var/lib/apt/lists/* && \
+    echo "#! /bin/bash\n set -e\n sudo /usr/sbin/sshd -D &\n exec \"\$@\"" > /home/user/entrypoint.sh && chmod a+x /home/user/entrypoint.sh
+
+ENV LANG en_GB.UTF-8
+ENV LANG en_US.UTF-8
+USER user
+RUN sudo locale-gen en_US.UTF-8 && \
+    svn --version && \
+    cd /home/user && ls -la && \
+    sed -i 's/# store-passwords = no/store-passwords = yes/g' /home/user/.subversion/servers && \
+    sed -i 's/# store-plaintext-passwords = no/store-plaintext-passwords = yes/g' /home/user/.subversion/servers
+EXPOSE 22 4403
+WORKDIR /projects
+ENTRYPOINT ["/home/user/entrypoint.sh"]
+CMD tail -f /dev/null
