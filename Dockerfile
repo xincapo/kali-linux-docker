@@ -15,9 +15,9 @@ RUN echo "secret\nsecret" | passwd user
 RUN add-apt-repository ppa:git-core/ppa
 RUN apt-get update
 RUN sudo apt-get install git subversion -y
-RUN apt-get -y autoremove
-    && apt-get -y clean \
-    && rm -rf /var/lib/apt/lists/* && \
+RUN apt-get -y autoremove \
+    apt-get -y clean \
+    rm -rf /var/lib/apt/lists/* && \
     echo "#! /bin/bash\n set -e\n sudo /usr/sbin/sshd -D &\n exec \"\$@\"" > /home/user/entrypoint.sh && chmod a+x /home/user/entrypoint.sh
 
 ENV LANG en_GB.UTF-8
